@@ -44,7 +44,7 @@ module.exports = app => {
     const upload = multer({dest: __dirname + '/../../uploads'})
     app.post('/admin/api/upload', upload.single('file'), authMiddleware(), async (req, res) => {
         const file = req.file
-        file.url = `http://localhost:3001/uploads/${file.filename}`
+        file.url = `http://mobagame.tk/uploads/${file.filename}`
         res.send(file)
     })
     app.post('/admin/api/login', async (req, res) => {
