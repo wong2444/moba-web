@@ -1,5 +1,6 @@
 module.exports = app => {
     const express = require('express')
+
     const jwt = require('jsonwebtoken')
     const AdminUser = require('../../models/AdminUser')
     const assert = require('http-assert')
@@ -8,6 +9,30 @@ module.exports = app => {
     const mongoose = require('mongoose')
     const router = express.Router({
         mergeParams: true//合併父路由參數到子路由中
+    })
+    const multer = require('multer')
+    const aws = require('aws-sdk')
+    aws.config.update({
+        secretAccessKey: 'mvqeNOAdRB6IP7VV3WFVmk6AOLdJ8PPyQiqM2sBq',
+        accessKeyId: 'AKIAJHYV2FQYG4OVXMAQ',
+        region: 'us-east-1'
+    });
+    const multerS3 = require('multer-s3')
+
+    const s3 = new aws.S3({ /* ... */ })
+
+    const upload = multer({
+        storage: multerS3({
+            s3: s3,
+            bucket: 'mobagame',
+            metadata: function (req, file, cb) {
+                cb(null, {fieldName: file.fieldname});
+            },
+            key: function (req, file, cb) {
+                cb(null, Date.now().toString())
+            },
+            acl: 'public-read-write'
+        })
     })
     router.post('/', authMiddleware(), async (req, res) => {
         const model = await req.Model.create(req.body)
@@ -40,13 +65,19 @@ module.exports = app => {
         res.send({success: 1})//發回客戶端
     })
     app.use('/admin/api/rest/:resource', resourceMiddleware(), authMiddleware(), router)
-    const multer = require('multer')
-    const upload = multer({dest: __dirname + '/../../uploads'})
-    app.post('/admin/api/upload', upload.single('file'), authMiddleware(), async (req, res) => {
+
+
+    app.post('/admin/api/upload', upload.single('file'),authMiddleware(),async function(req, res) {
         const file = req.file
-        file.url = `http://mobagame.tk/uploads/${file.filename}`
+        file.url = file.location
         res.send(file)
     })
+    // const upload = multer({dest: __dirname + '/../../uploads'})
+    // app.post('/admin/api/upload', upload.single('file'), authMiddleware(), async (req, res) => {
+    //     const file = req.file
+    //     file.url = `http://mobagame.tk/uploads/${file.filename}`
+    //     res.send(file)
+    // })
     app.post('/admin/api/login', async (req, res) => {
         let {username, password} = req.body
 
